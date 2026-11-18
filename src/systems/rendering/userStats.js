@@ -46,13 +46,10 @@ export function buildUserStatsText() {
     const stats = extensionSettings.userStats;
     const config = extensionSettings.trackerConfig?.userStats || {
         customStats: [
-            { id: 'health', name: 'Health', enabled: true },
-            { id: 'satiety', name: 'Satiety', enabled: true },
-            { id: 'energy', name: 'Energy', enabled: true },
-            { id: 'hygiene', name: 'Hygiene', enabled: true },
-            { id: 'arousal', name: 'Arousal', enabled: true }
+            // Fallout resources are rendered by the dedicated Fallout panel.
+        
         ],
-        statusSection: { enabled: true, showMoodEmoji: true, customFields: ['Conditions'] },
+        statusSection: { enabled: true, showMoodEmoji: false, customFields: ['Conditions'] },
         skillsSection: { enabled: false, label: 'Skills' }
     };
 
@@ -136,9 +133,7 @@ function updateUserStatsData() {
                     jsonData.stats = statsArray;
 
                     // Update status - include all custom status fields
-                    jsonData.status = {
-                        mood: stats.mood || '😐'
-                    };
+                    jsonData.status = {};
 
                     // Add all custom status fields
                     for (const fieldName of customFields) {
@@ -234,21 +229,19 @@ export function renderUserStats() {
     // });
     const config = extensionSettings.trackerConfig?.userStats || {
         customStats: [
-            { id: 'health', name: 'Health', enabled: true },
-            { id: 'satiety', name: 'Satiety', enabled: true },
-            { id: 'energy', name: 'Energy', enabled: true },
-            { id: 'hygiene', name: 'Hygiene', enabled: true },
-            { id: 'arousal', name: 'Arousal', enabled: true }
+            // Fallout resources are rendered by the dedicated Fallout panel.
+        
         ],
         rpgAttributes: [
             { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
+            { id: 'per', name: 'PER', enabled: true },
+            { id: 'end', name: 'END', enabled: true },
+            { id: 'cha', name: 'CHA', enabled: true },
             { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
-            { id: 'cha', name: 'CHA', enabled: true }
+            { id: 'agi', name: 'AGI', enabled: true },
+            { id: 'lck', name: 'LCK', enabled: true }
         ],
-        statusSection: { enabled: true, showMoodEmoji: true, customFields: ['Conditions'] },
+        statusSection: { enabled: true, showMoodEmoji: false, customFields: ['Conditions'] },
         skillsSection: { enabled: false, label: 'Skills' }
     };
     const userName = getContext().name1;
@@ -401,11 +394,12 @@ export function renderUserStats() {
         // Use attributes from config, with fallback to defaults if not configured
         const rpgAttributes = (config.rpgAttributes && config.rpgAttributes.length > 0) ? config.rpgAttributes : [
             { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
+            { id: 'per', name: 'PER', enabled: true },
+            { id: 'end', name: 'END', enabled: true },
+            { id: 'cha', name: 'CHA', enabled: true },
             { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
-            { id: 'cha', name: 'CHA', enabled: true }
+            { id: 'agi', name: 'AGI', enabled: true },
+            { id: 'lck', name: 'LCK', enabled: true }
         ];
         const enabledAttributes = rpgAttributes.filter(attr => attr && attr.enabled && attr.name && attr.id);
 
@@ -417,7 +411,7 @@ export function renderUserStats() {
         `;
 
             enabledAttributes.forEach(attr => {
-                const value = extensionSettings.classicStats[attr.id] !== undefined ? extensionSettings.classicStats[attr.id] : 10;
+                const value = extensionSettings.classicStats[attr.id] !== undefined ? extensionSettings.classicStats[attr.id] : 5;
                 html += `
                         <div class="rpg-classic-stat" data-stat="${attr.id}">
                             <span class="rpg-classic-stat-label">${attr.name}</span>
@@ -537,13 +531,7 @@ export function renderUserStats() {
         const value = $(this).text().trim().replace(':', '');
 
         if (!extensionSettings.statNames) {
-            extensionSettings.statNames = {
-                health: 'Health',
-                satiety: 'Satiety',
-                energy: 'Energy',
-                hygiene: 'Hygiene',
-                arousal: 'Arousal'
-            };
+            extensionSettings.statNames = {};
         }
 
         extensionSettings.statNames[field] = value || extensionSettings.statNames[field];

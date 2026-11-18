@@ -238,7 +238,7 @@ export async function buildEncounterInitPrompt() {
         userStatsInfo += `${userName}'s Attributes: `;
         const showLevel = extensionSettings.trackerConfig?.userStats?.showLevel !== false;
         const levelStr = showLevel ? `, LVL ${extensionSettings.level}` : '';
-        userStatsInfo += `STR ${stats.str}, DEX ${stats.dex}, CON ${stats.con}, INT ${stats.int}, WIS ${stats.wis}, CHA ${stats.cha}${levelStr}\n\n`;
+        userStatsInfo += `STR ${stats.str}, PER ${stats.per}, END ${stats.end}, CHA ${stats.cha}, INT ${stats.int}, AGI ${stats.agi}, LCK ${stats.lck}${levelStr}\n\n`;
     }
 
     // Add present characters info for party members
@@ -429,14 +429,15 @@ export async function buildCombatActionPrompt(action, combatStats) {
             const config = extensionSettings.trackerConfig?.userStats;
             const rpgAttributes = (config?.rpgAttributes && config.rpgAttributes.length > 0) ? config.rpgAttributes : [
                 { id: 'str', name: 'STR', enabled: true },
-                { id: 'dex', name: 'DEX', enabled: true },
-                { id: 'con', name: 'CON', enabled: true },
+                { id: 'per', name: 'PER', enabled: true },
+                { id: 'end', name: 'END', enabled: true },
                 { id: 'int', name: 'INT', enabled: true },
-                { id: 'wis', name: 'WIS', enabled: true },
+                { id: 'agi', name: 'AGI', enabled: true },
+                { id: 'lck', name: 'LCK', enabled: true },
                 { id: 'cha', name: 'CHA', enabled: true }
             ];
             const enabledAttributes = rpgAttributes.filter(attr => attr && attr.enabled && attr.name && attr.id);
-            const attributeStrings = enabledAttributes.map(attr => `${attr.name} ${stats[attr.id] || 10}`);
+            const attributeStrings = enabledAttributes.map(attr => `${attr.name} ${stats[attr.id] ?? 5}`);
             systemMessage += `\nAttributes: ${attributeStrings.join(', ')}, LVL ${extensionSettings.level}\n`;
         }
 

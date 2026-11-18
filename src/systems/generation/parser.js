@@ -806,21 +806,31 @@ export function parseUserStats(statsText) {
 
         // Parse RPG attributes if enabled
         if (trackerConfig?.userStats?.showRPGAttributes) {
-            const strMatch = statsText.match(/STR:\s*(\d+)/i);
-            const dexMatch = statsText.match(/DEX:\s*(\d+)/i);
-            const conMatch = statsText.match(/CON:\s*(\d+)/i);
-            const intMatch = statsText.match(/INT:\s*(\d+)/i);
-            const wisMatch = statsText.match(/WIS:\s*(\d+)/i);
-            const chaMatch = statsText.match(/CHA:\s*(\d+)/i);
+            const specialMatches = {
+                str: statsText.match(/STR\s*:?\s*(\d+)/i),
+                per: statsText.match(/PER\s*:?\s*(\d+)/i),
+                end: statsText.match(/END\s*:?\s*(\d+)/i),
+                cha: statsText.match(/CHA\s*:?\s*(\d+)/i),
+                int: statsText.match(/INT\s*:?\s*(\d+)/i),
+                agi: statsText.match(/AGI\s*:?\s*(\d+)/i),
+                lck: statsText.match(/LCK\s*:?\s*(\d+)/i)
+            };
             const lvlMatch = statsText.match(/LVL:\s*(\d+)/i);
 
-            if (strMatch) extensionSettings.classicStats.str = parseInt(strMatch[1]);
-            if (dexMatch) extensionSettings.classicStats.dex = parseInt(dexMatch[1]);
-            if (conMatch) extensionSettings.classicStats.con = parseInt(conMatch[1]);
-            if (intMatch) extensionSettings.classicStats.int = parseInt(intMatch[1]);
-            if (wisMatch) extensionSettings.classicStats.wis = parseInt(wisMatch[1]);
-            if (chaMatch) extensionSettings.classicStats.cha = parseInt(chaMatch[1]);
-            if (lvlMatch) extensionSettings.level = parseInt(lvlMatch[1]);
+            for (const [attribute, match] of Object.entries(specialMatches)) {
+                if (!match) continue;
+                const value = Math.max(1, Math.min(10, parseInt(match[1], 10)));
+                extensionSettings.classicStats[attribute] = value;
+                if (extensionSettings.fallout?.character?.special) {
+                    extensionSettings.fallout.character.special[attribute] = value;
+                }
+            }
+            if (lvlMatch) {
+                extensionSettings.level = parseInt(lvlMatch[1], 10);
+                if (extensionSettings.fallout?.character) {
+                    extensionSettings.fallout.character.level = extensionSettings.level;
+                }
+            }
 
             debugLog('[RPG Parser] RPG Attributes parsed');
         }
@@ -932,13 +942,9 @@ export function parseUserStats(statsText) {
             debugLog('[RPG Parser] Optional quests extracted:', extensionSettings.quests.optional);
         }
 
-        debugLog('[RPG Parser] Final userStats after parsing:', {
-            health: extensionSettings.userStats.health,
-            satiety: extensionSettings.userStats.satiety,
-            energy: extensionSettings.userStats.energy,
-            hygiene: extensionSettings.userStats.hygiene,
-            arousal: extensionSettings.userStats.arousal,
-            mood: extensionSettings.userStats.mood,
+        debugLog('[RPG Parser] Final Fallout tracker state:', {
+            special: extensionSettings.fallout?.character?.special,
+            resources: extensionSettings.fallout?.resources,
             conditions: extensionSettings.userStats.conditions,
             inventory: FEATURE_FLAGS.useNewInventory ? 'v2 object' : extensionSettings.userStats.inventory
         });

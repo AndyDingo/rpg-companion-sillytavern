@@ -365,24 +365,21 @@ function resetToDefaults() {
     extensionSettings.trackerConfig = {
         userStats: {
             customStats: [
-                { id: 'health', name: i18n.getTranslation('stats.health') || 'Health', enabled: true, persistInHistory: false },
-                { id: 'satiety', name: i18n.getTranslation('stats.satiety') || 'Satiety', enabled: true, persistInHistory: false },
-                { id: 'energy', name: i18n.getTranslation('stats.energy') || 'Energy', enabled: true, persistInHistory: false },
-                { id: 'hygiene', name: i18n.getTranslation('stats.hygiene') || 'Hygiene', enabled: true, persistInHistory: false },
-                { id: 'arousal', name: i18n.getTranslation('stats.arousal') || 'Arousal', enabled: true, persistInHistory: false }
+
             ],
             showRPGAttributes: true,
             rpgAttributes: [
-                { id: 'str', name: i18n.getTranslation('stats.str') || 'STR', enabled: true, persistInHistory: false },
-                { id: 'dex', name: i18n.getTranslation('stats.dex') || 'DEX', enabled: true, persistInHistory: false },
-                { id: 'con', name: i18n.getTranslation('stats.con') || 'CON', enabled: true, persistInHistory: false },
-                { id: 'int', name: i18n.getTranslation('stats.int') || 'INT', enabled: true, persistInHistory: false },
-                { id: 'wis', name: i18n.getTranslation('stats.wis'), enabled: true, persistInHistory: false },
-                { id: 'cha', name: i18n.getTranslation('stats.cha'), enabled: true, persistInHistory: false }
+                { id: 'str', name: 'STR', enabled: true, persistInHistory: false },
+                { id: 'per', name: 'PER', enabled: true, persistInHistory: false },
+                { id: 'end', name: 'END', enabled: true, persistInHistory: false },
+                { id: 'cha', name: 'CHA', enabled: true, persistInHistory: false },
+                { id: 'int', name: 'INT', enabled: true, persistInHistory: false },
+                { id: 'agi', name: 'AGI', enabled: true, persistInHistory: false },
+                { id: 'lck', name: 'LCK', enabled: true, persistInHistory: false }
             ],
             statusSection: {
                 enabled: true,
-                showMoodEmoji: true,
+                showMoodEmoji: false,
                 customFields: ['Conditions'],
                 persistInHistory: false
             },
@@ -439,8 +436,8 @@ function resetToDefaults() {
             characterStats: {
                 enabled: false,
                 customStats: [
-                    { id: 'health', name: i18n.getTranslation('stats.health'), enabled: true, colorLow: '#ff4444', colorHigh: '#44ff44' },
-                    { id: 'energy', name: i18n.getTranslation('stats.energy'), enabled: true, colorLow: '#ffaa00', colorHigh: '#44ffff' }
+                    { id: 'hp', name: 'HP', enabled: true, colorLow: '#ff4444', colorHigh: '#44ff44' },
+                    { id: 'radiation', name: 'Radiation', enabled: true, colorLow: '#ffaa00', colorHigh: '#44ffff' }
                 ]
             }
         }
@@ -820,10 +817,11 @@ function renderUserStatsTab() {
     if (!config.rpgAttributes || config.rpgAttributes.length === 0) {
         config.rpgAttributes = [
             { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
+            { id: 'per', name: 'PER', enabled: true },
+            { id: 'end', name: 'END', enabled: true },
             { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
+            { id: 'agi', name: 'AGI', enabled: true },
+            { id: 'lck', name: 'LCK', enabled: true },
             { id: 'cha', name: 'CHA', enabled: true }
         ];
         // Save the defaults back to the actual config
@@ -940,10 +938,11 @@ function setupUserStatsListeners() {
         if (!extensionSettings.trackerConfig.userStats.rpgAttributes || extensionSettings.trackerConfig.userStats.rpgAttributes.length === 0) {
             extensionSettings.trackerConfig.userStats.rpgAttributes = [
                 { id: 'str', name: 'STR', enabled: true },
-                { id: 'dex', name: 'DEX', enabled: true },
-                { id: 'con', name: 'CON', enabled: true },
+                { id: 'per', name: 'PER', enabled: true },
+                { id: 'end', name: 'END', enabled: true },
                 { id: 'int', name: 'INT', enabled: true },
-                { id: 'wis', name: 'WIS', enabled: true },
+                { id: 'agi', name: 'AGI', enabled: true },
+                { id: 'lck', name: 'LCK', enabled: true },
                 { id: 'cha', name: 'CHA', enabled: true }
             ];
         }
@@ -955,7 +954,7 @@ function setupUserStatsListeners() {
         });
         // Initialize value in classicStats if doesn't exist
         if (extensionSettings.classicStats[newId] === undefined) {
-            extensionSettings.classicStats[newId] = 10;
+            extensionSettings.classicStats[newId] = 5;
         }
         renderUserStatsTab();
     });

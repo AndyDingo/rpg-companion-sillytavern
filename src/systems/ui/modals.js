@@ -29,6 +29,7 @@ import {
     addDiceQuickReply as addDiceQuickReplyCore
 } from '../features/dice.js';
 import { i18n } from '../../core/i18n.js';
+import { createDefaultFalloutState } from '../fallout/schema.js';
 
 /**
  * Modern DiceModal ES6 Class
@@ -413,12 +414,6 @@ export function setupSettingsPopup() {
 
         // Reset user stats to default object structure (extensionSettings stores as object, not JSON string)
         extensionSettings.userStats = {
-            health: 100,
-            satiety: 100,
-            energy: 100,
-            hygiene: 100,
-            arousal: 0,
-            mood: '😐',
             conditions: 'None',
             skills: [],
             inventory: {
@@ -446,14 +441,8 @@ export function setupSettingsPopup() {
         };
 
         // Reset classic stats (attributes) to defaults
-        extensionSettings.classicStats = {
-            str: 10,
-            dex: 10,
-            con: 10,
-            int: 10,
-            wis: 10,
-            cha: 10
-        };
+        extensionSettings.fallout = createDefaultFalloutState();
+        extensionSettings.classicStats = { ...extensionSettings.fallout.character.special };
 
         // Clear dice roll
         extensionSettings.lastDiceRoll = null;

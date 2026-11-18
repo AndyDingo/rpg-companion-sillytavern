@@ -1,6 +1,6 @@
 /**
  * Classic Stats Module
- * Handles classic RPG stat buttons (STR, DEX, CON, INT, WIS, CHA) +/- controls
+ * Handles Fallout SPECIAL attribute buttons +/- controls
  */
 
 import {
@@ -22,10 +22,13 @@ export function setupClassicStatsButtons() {
         const stat = $(this).data('stat');
         // Initialize custom attributes if they don't exist
         if (extensionSettings.classicStats[stat] === undefined) {
-            extensionSettings.classicStats[stat] = 10;
+            extensionSettings.classicStats[stat] = 5;
         }
-        if (extensionSettings.classicStats[stat] < 999) {
+        if (extensionSettings.classicStats[stat] < 10) {
             extensionSettings.classicStats[stat]++;
+            if (extensionSettings.fallout?.character?.special) {
+                extensionSettings.fallout.character.special[stat] = extensionSettings.classicStats[stat];
+            }
             saveSettings();
             saveChatData();
             // Update only the specific stat value, not the entire stats panel
@@ -39,10 +42,13 @@ export function setupClassicStatsButtons() {
         const stat = $(this).data('stat');
         // Initialize custom attributes if they don't exist
         if (extensionSettings.classicStats[stat] === undefined) {
-            extensionSettings.classicStats[stat] = 10;
+            extensionSettings.classicStats[stat] = 5;
         }
         if (extensionSettings.classicStats[stat] > 1) {
             extensionSettings.classicStats[stat]--;
+            if (extensionSettings.fallout?.character?.special) {
+                extensionSettings.fallout.character.special[stat] = extensionSettings.classicStats[stat];
+            }
             saveSettings();
             saveChatData();
             // Update only the specific stat value, not the entire stats panel

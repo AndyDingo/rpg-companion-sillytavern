@@ -132,12 +132,8 @@ function updateLastGeneratedDataInventory() {
     const stats = extensionSettings.userStats;
     const inventorySummary = buildInventorySummary(stats.inventory);
     const statsText =
-        `Health: ${stats.health}%\n` +
-        `Satiety: ${stats.satiety}%\n` +
-        `Energy: ${stats.energy}%\n` +
-        `Hygiene: ${stats.hygiene}%\n` +
-        `Arousal: ${stats.arousal}%\n` +
-        `${stats.mood}: ${stats.conditions}\n` +
+        `Fallout 2d20 character inventory context\n` +
+        `Conditions: ${stats.conditions || 'None'}\n` +
         `${inventorySummary}`;
     lastGeneratedData.userStats = statsText;
     committedTrackerData.userStats = statsText;

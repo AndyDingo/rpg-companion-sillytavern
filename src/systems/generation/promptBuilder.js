@@ -66,7 +66,7 @@ export const DEFAULT_NARRATOR_PROMPT = `Infer the identity and details of charac
 /**
  * Default Context Instructions prompt text (customizable by users)
  */
-export const DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT = `The context above is information about the current scene, and what follows is the last message in the chat history. Ensure these details naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as fatigue affecting performance, low hygiene influencing social interactions, environmental factors shaping the scene, or a character's emotional state coloring their responses.`;
+export const DEFAULT_CONTEXT_INSTRUCTIONS_PROMPT = `The context above is information about the current scene, and what follows is the last message in the chat history. Ensure these details naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as radiation exposure, fatigue, injuries, environmental hazards, and survival needs influencing their decisions and performance.`;
 
 /**
  * Gets character card information for current chat (handles both single and group chats)
@@ -209,10 +209,10 @@ export function buildInventorySummary(inventory) {
 }
 
 /**
- * Builds a dynamic attributes string based on configured RPG attributes.
+ * Builds a dynamic SPECIAL string based on configured Fallout attributes.
  * Uses custom attribute names and values from classicStats.
  *
- * @returns {string} Formatted attributes string (e.g., "STR 10, DEX 12, INT 15, LVL 5")
+ * @returns {string} Formatted attributes string (e.g., "STR 5, PER 5, END 5, CHA 5, INT 5, AGI 5, LCK 5")
  */
 function buildAttributesString() {
     const trackerConfig = extensionSettings.trackerConfig;
@@ -222,18 +222,19 @@ function buildAttributesString() {
     // Get enabled attributes from config
     const rpgAttributes = userStatsConfig?.rpgAttributes || [
         { id: 'str', name: 'STR', enabled: true },
-        { id: 'dex', name: 'DEX', enabled: true },
-        { id: 'con', name: 'CON', enabled: true },
+        { id: 'per', name: 'PER', enabled: true },
+        { id: 'end', name: 'END', enabled: true },
+        { id: 'cha', name: 'CHA', enabled: true },
         { id: 'int', name: 'INT', enabled: true },
-        { id: 'wis', name: 'WIS', enabled: true },
-        { id: 'cha', name: 'CHA', enabled: true }
+        { id: 'agi', name: 'AGI', enabled: true },
+        { id: 'lck', name: 'LCK', enabled: true }
     ];
 
     const enabledAttributes = rpgAttributes.filter(attr => attr && attr.enabled && attr.name && attr.id);
 
     // Build attributes string dynamically
     const attributeParts = enabledAttributes.map(attr => {
-        const value = classicStats[attr.id] !== undefined ? classicStats[attr.id] : 10;
+        const value = classicStats[attr.id] !== undefined ? classicStats[attr.id] : 5;
         return `${attr.name} ${value}`;
     });
 
@@ -345,8 +346,8 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
         if (customPrompt) {
             instructions += customPrompt.replace(/{userName}/g, userName);
         } else {
-            instructions += `Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that ${userName} perceives about the current scene and the present characters. For example: "Location" becomes "Forest Clearing", "Mood Emoji" becomes "😊". DO NOT include ${userName} in the characters section, only NPCs. `;
-            instructions += `Consider the last trackers in the conversation (if they exist). Manage them accordingly and realistically; raise, lower, change, or keep the values unchanged based on the user's actions, the passage of time, and logical consequences.`;
+            instructions += `Replace X with actual numbers (e.g., 69) and replace all placeholders with concrete in-world details that ${userName} perceives about the current scene and the present characters. For example: set Location to a concrete in-world place and Conditions to established injuries or effects. DO NOT include ${userName} in the characters section, only NPCs. `;
+            instructions += `Consider the last trackers in the conversation (if they exist). Update only values justified by established events. Do not infer or advance elapsed campaign time; the player controls the campaign clock manually. Do not change SPECIAL or skills except when an explicit advancement or character change occurs.`;
         }
 
         // Add lock instruction
@@ -400,7 +401,7 @@ export function generateTrackerInstructions(includeHtmlPrompt = true, includeCon
             if (customPrompt) {
                 instructions += '\n\n' + customPrompt + '\n\n';
             } else {
-                instructions += `\n\nAfter updating the trackers, continue directly from where the last message in the chat history left off. Ensure the trackers you provide naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as fatigue affecting the protagonist's performance, low hygiene influencing their social interactions, environmental factors shaping the scene, a character's emotional state coloring their responses, and so on. Remember, all bracketed placeholders (e.g., [Location], [Mood Emoji]) MUST be replaced with actual content without the square brackets.\n\n`;
+                instructions += `\n\nAfter updating the trackers, continue directly from where the last message in the chat history left off. Ensure the trackers you provide naturally reflect and influence the narrative. Character behavior, dialogue, and story events should acknowledge these conditions when relevant, such as radiation exposure, fatigue, injuries, environmental hazards, and survival needs influencing the protagonist's decisions and performance. Do not advance the campaign clock; it is controlled manually by the player. Do not invent elapsed time or mechanical outcomes.\n\n`;
             }
         }
 
@@ -592,8 +593,8 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
                 }
             } else {
                 // Fallback: handle flat format {health: 10, mana: 20, ...}
-                const statFieldOrder = ['health', 'mana', 'stamina', 'satiety', 'hygiene', 'energy', 'arousal'];
-                const specialFields = ['status', 'mood', 'skills', 'inventory', 'quests'];
+                const statFieldOrder = ['hp', 'maxHp', 'actionPoints', 'luckPoints', 'fatigue', 'radiation'];
+                const specialFields = ['status', 'mood', 'skills', 'inventory', 'quests', 'conditions', 'injuries', 'health', 'satiety', 'energy', 'hygiene', 'arousal'];
 
                 for (const statName of statFieldOrder) {
                     if (data[statName] !== undefined) {
@@ -616,7 +617,7 @@ function formatTrackerDataForContext(jsonData, trackerType, userName) {
 
             // Status/mood
             if (data.status) formatted += `Status: ${getValue(data.status)}\n`;
-            if (data.mood) formatted += `Mood: ${getValue(data.mood)}\n`;
+            if (data.conditions) formatted += `Conditions: ${getValue(data.conditions)}\n`;
 
             // Skills - handle both array and object format
             if (data.skills) {

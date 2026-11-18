@@ -3244,6 +3244,59 @@ body:has(.rpg-panel.rpg-position-left) #sheld {
    THEME VARIATIONS
    ============================================ */
 
+
+/* Fallout Pip-Boy / green phosphor theme */
+.rpg-panel[data-theme="pipboy"] {
+    --rpg-bg: #07130c;
+    --rpg-accent: #102719;
+    --rpg-text: #9cff9c;
+    --rpg-highlight: #7cff6b;
+    --rpg-border: #3f9b50;
+    --rpg-shadow: rgba(75, 255, 95, 0.22);
+    color: var(--rpg-text);
+    font-family: "Consolas", "Lucida Console", monospace;
+}
+
+.rpg-panel[data-theme="pipboy"] .rpg-content-box {
+    background: linear-gradient(145deg, #102719 0%, #07130c 100%);
+    border: 1px solid #3f9b50;
+    box-shadow: inset 0 0 18px rgba(75, 255, 95, 0.08), 0 0 12px rgba(75, 255, 95, 0.12);
+}
+
+.rpg-panel[data-theme="pipboy"] .rpg-panel-header h3,
+.rpg-panel[data-theme="pipboy"] .rpg-stats-title,
+.rpg-panel[data-theme="pipboy"] .rpg-info-header,
+.rpg-panel[data-theme="pipboy"] .rpg-thoughts-header,
+.rpg-panel[data-theme="pipboy"] .rpg-classic-stat-value {
+    color: #a8ffa8;
+    text-shadow: 0 0 7px rgba(110, 255, 110, 0.45);
+}
+
+.rpg-panel[data-theme="pipboy"] button,
+.rpg-panel[data-theme="pipboy"] .rpg-classic-stat-btn {
+    border-color: #3f9b50;
+    color: #a8ffa8;
+    background: #102719;
+}
+
+.rpg-panel[data-theme="pipboy"] button:hover,
+.rpg-panel[data-theme="pipboy"] .rpg-classic-stat-btn:hover {
+    background: #1b3c27;
+    box-shadow: 0 0 8px rgba(110, 255, 110, 0.22);
+}
+
+#rpg-thought-panel[data-theme="pipboy"],
+#rpg-thought-icon[data-theme="pipboy"],
+#rpg-alt-present-characters[data-theme="pipboy"],
+.rpg-mobile-toggle[data-theme="pipboy"] {
+    --rpg-bg: #07130c;
+    --rpg-accent: #102719;
+    --rpg-text: #9cff9c;
+    --rpg-highlight: #7cff6b;
+    --rpg-border: #3f9b50;
+    --rpg-shadow: rgba(75, 255, 95, 0.22);
+}
+
 /* Sci-Fi / Synthwave Theme */
 .rpg-panel[data-theme="sci-fi"] {
     --rpg-bg: #0a0e27;
