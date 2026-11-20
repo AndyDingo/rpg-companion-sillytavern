@@ -22,6 +22,7 @@ export const extensionFolderPath = isUserExtension
  * Default extension settings
  */
 export const defaultSettings = {
+    ruleset: 'fallout2d20',
     enabled: true,
     autoUpdate: true,
     updateDepth: 4, // How many messages to include in the context
@@ -50,7 +51,7 @@ export const defaultSettings = {
     enablePlotButtons: true, // Show plot progression buttons above chat input
     saveTrackerHistory: false, // Save tracker data in chat history for each message
     panelPosition: 'right', // 'left', 'right', or 'top'
-    theme: 'default', // Theme: default, sci-fi, fantasy, cyberpunk, custom
+    theme: 'pipboy', // Fallout Pip-Boy theme
     customColors: {
         bg: '#1a1a2e',
         accent: '#16213e',
@@ -65,12 +66,6 @@ export const defaultSettings = {
         right: '12px'
     }, // Saved position for mobile FAB button
     userStats: {
-        health: 100,
-        satiety: 100,
-        energy: 100,
-        hygiene: 100,
-        arousal: 0,
-        mood: '😐',
         conditions: 'None',
         /** @type {InventoryV2} */
         inventory: {
@@ -81,12 +76,18 @@ export const defaultSettings = {
         }
     },
     classicStats: {
-        str: 10,
-        dex: 10,
-        con: 10,
-        int: 10,
-        wis: 10,
-        cha: 10
+        str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, lck: 5
+    },
+    fallout: {
+        version: 1,
+        ruleset: 'fallout2d20',
+        character: { name: '', level: 1, special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, lck: 5 }, skills: {}, perks: [] },
+        resources: { hp: null, maxHp: null, actionPoints: 0, luckPoints: 0, fatigue: 0, radiation: 0 },
+        conditions: [], injuries: [],
+        survival: { enabled: false, hunger: { enabled: false, state: 'full', stateEnteredAt: null }, thirst: { enabled: false, state: 'quenched', stateEnteredAt: null }, sleep: { enabled: false, state: 'rested', lastRestAt: null } },
+        campaignClock: { mode: 'manual', currentDate: null, currentTime: null, elapsedMinutes: 0, lastAdvanceReason: '' },
+        equipment: { weapons: [], armour: [], ammunition: [], aid: [], miscellaneous: [] },
+        settings: { aiUpdateMode: 'automatic' }
     },
     lastDiceRoll: null, // Store last dice roll result
     collapsedInventoryLocations: [] // Array of collapsed storage location names

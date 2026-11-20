@@ -21,17 +21,13 @@ import {
 import { migrateInventory } from '../utils/migration.js';
 import { validateStoredInventory, cleanItemString } from '../utils/security.js';
 import { migrateToV3JSON } from '../utils/jsonMigration.js';
+import { createDefaultFalloutState, normalizeFalloutState } from '../systems/fallout/schema.js';
+import { applyTheme } from '../systems/ui/theme.js';
 
 const extensionName = 'third-party/rpg-companion-sillytavern';
-const CURRENT_SETTINGS_VERSION = 5;
+const CURRENT_SETTINGS_VERSION = 6;
 
 const DEFAULT_USER_STATS = {
-    health: 100,
-    satiety: 100,
-    energy: 100,
-    hygiene: 100,
-    arousal: 0,
-    mood: '😐',
     conditions: 'None',
     skills: [],
     inventory: {
@@ -163,16 +159,18 @@ function normalizeUserStatsValue(userStats) {
     }
 
     if (Array.isArray(parsedStats.stats)) {
+        const legacyFields = ['health', 'satiety', 'energy', 'hygiene', 'arousal', 'mood'];
         for (const stat of parsedStats.stats) {
             if (!stat || typeof stat !== 'object') continue;
             const id = stat.id || stat.name?.toLowerCase?.();
-            if (id && stat.value !== undefined) {
+            if (id && !legacyFields.includes(String(id).toLowerCase()) && stat.value !== undefined) {
                 normalized[id] = stat.value;
             }
         }
     } else {
         for (const [key, value] of Object.entries(parsedStats)) {
-            if (!['stats', 'status', 'inventory', 'quests'].includes(key) && value !== undefined) {
+            const legacyFields = ['health', 'satiety', 'energy', 'hygiene', 'arousal', 'mood'];
+            if (!['stats', 'status', 'inventory', 'quests'].includes(key) && !legacyFields.includes(key) && value !== undefined) {
                 normalized[key] = cloneSerializable(value);
             }
         }
@@ -180,7 +178,7 @@ function normalizeUserStatsValue(userStats) {
 
     if (isPlainObject(parsedStats.status)) {
         for (const [key, value] of Object.entries(parsedStats.status)) {
-            if (value !== undefined) {
+            if (key !== 'mood' && value !== undefined) {
                 normalized[key] = cloneSerializable(value);
             }
         }
@@ -240,6 +238,7 @@ function normalizeSettings(savedSettings) {
     const savedVersion = Number(sourceSettings.settingsVersion);
     normalized.settingsVersion = Number.isFinite(savedVersion) && savedVersion > 0 ? savedVersion : 1;
     normalized.userStats = normalizeUserStatsValue(sourceSettings.userStats);
+    normalized.fallout = normalizeFalloutState(sourceSettings.fallout ?? normalized.fallout);
 
     const parsedUserStats = parseMaybeJSON(sourceSettings.userStats);
     if (sourceSettings.quests !== undefined) {
@@ -520,10 +519,8 @@ function validateSettings(settings) {
 
     // Validate userStats structure
     const stats = settings.userStats;
-    if (typeof stats.health !== 'number' ||
-        typeof stats.satiety !== 'number' ||
-        typeof stats.energy !== 'number' ||
-        !stats.inventory || typeof stats.inventory !== 'object') {
+    if (!stats.inventory || typeof stats.inventory !== 'object' ||
+        !settings.fallout || typeof settings.fallout !== 'object') {
         console.warn('[RPG Companion] Settings validation failed: invalid userStats structure');
         return false;
     }
@@ -616,6 +613,23 @@ export function loadSettings() {
                 settingsChanged = true;
             }
 
+            // Migration to version 6: initialise the Fallout 2d20 foundation.
+            if (currentVersion < 6) {
+                extensionSettings.ruleset = 'fallout2d20';
+                extensionSettings.fallout = normalizeFalloutState(extensionSettings.fallout);
+                extensionSettings.theme = 'pipboy';
+                extensionSettings.settingsVersion = 6;
+                settingsChanged = true;
+            }
+
+            // This fork is Fallout-specific: enforce Pip-Boy even for settings already
+            // marked as v6 (the earlier migration only ran for pre-v6 installs).
+            if (extensionSettings.theme !== 'pipboy') {
+                extensionSettings.theme = 'pipboy';
+                settingsChanged = true;
+            }
+            extensionSettings.ruleset = 'fallout2d20';
+
             // Normalize additive settings without introducing another schema bump.
             if (!extensionSettings.thoughtsInChatStyle) {
                 extensionSettings.thoughtsInChatStyle = 'corner';
@@ -661,6 +675,10 @@ export function loadSettings() {
 
         // Migrate to preset manager system if presets don't exist
         migrateToPresetManager();
+
+        // Enforce Fallout defaults in the active tracker configuration and saved presets.
+        applyFalloutTrackerDefaults();
+        saveSettings();
 
         // Initialize custom status fields
         initializeCustomStatusFields();
@@ -714,6 +732,7 @@ export function saveChatData() {
     chat_metadata.rpg_companion = {
         userStats: extensionSettings.userStats,
         classicStats: extensionSettings.classicStats,
+        fallout: extensionSettings.fallout,
         quests: extensionSettings.quests,
         lastGeneratedData: lastGeneratedData,
         committedTrackerData: committedTrackerData,
@@ -954,12 +973,6 @@ export function loadChatData() {
         // Reset to defaults if no metadata exists, then try to rebuild from message swipe data below.
         updateExtensionSettings({
             userStats: {
-                health: 100,
-                satiety: 100,
-                energy: 100,
-                hygiene: 100,
-                arousal: 0,
-                mood: '😐',
                 conditions: 'None',
                 // Use v2 inventory format for defaults
                 inventory: {
@@ -973,7 +986,9 @@ export function loadChatData() {
             quests: {
                 main: "None",
                 optional: []
-            }
+            },
+            fallout: createDefaultFalloutState(),
+            classicStats: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, lck: 5 }
         });
         setLastGeneratedData({
             userStats: null,
@@ -991,13 +1006,15 @@ export function loadChatData() {
 
     // Restore stats
     if (savedData?.userStats) {
-        extensionSettings.userStats = { ...savedData.userStats };
+        extensionSettings.userStats = normalizeUserStatsValue(savedData.userStats);
     }
 
     // Restore classic stats
     if (savedData?.classicStats) {
         extensionSettings.classicStats = { ...savedData.classicStats };
     }
+    extensionSettings.fallout = normalizeFalloutState(savedData?.fallout ?? createDefaultFalloutState());
+    extensionSettings.classicStats = { ...extensionSettings.fallout.character.special };
 
     // Restore quests
     if (savedData?.quests) {
@@ -1184,15 +1201,16 @@ function migrateToTrackerConfig() {
                 showRPGAttributes: true,
                 rpgAttributes: [
                     { id: 'str', name: 'STR', enabled: true },
-                    { id: 'dex', name: 'DEX', enabled: true },
-                    { id: 'con', name: 'CON', enabled: true },
+                    { id: 'per', name: 'PER', enabled: true },
+                    { id: 'end', name: 'END', enabled: true },
+                    { id: 'cha', name: 'CHA', enabled: true },
                     { id: 'int', name: 'INT', enabled: true },
-                    { id: 'wis', name: 'WIS', enabled: true },
-                    { id: 'cha', name: 'CHA', enabled: true }
+                    { id: 'agi', name: 'AGI', enabled: true },
+                    { id: 'lck', name: 'LCK', enabled: true }
                 ],
                 statusSection: {
                     enabled: true,
-                    showMoodEmoji: true,
+                    showMoodEmoji: false,
                     customFields: ['Conditions']
                 },
                 skillsSection: {
@@ -1229,7 +1247,7 @@ function migrateToTrackerConfig() {
 
     // Migrate old statNames to customStats if statNames exists
     if (extensionSettings.statNames && extensionSettings.trackerConfig.userStats.customStats.length === 0) {
-        const statOrder = ['health', 'satiety', 'energy', 'hygiene', 'arousal'];
+        const statOrder = [];
         extensionSettings.trackerConfig.userStats.customStats = statOrder.map(id => ({
             id: id,
             name: extensionSettings.statNames[id] || id.charAt(0).toUpperCase() + id.slice(1),
@@ -1252,11 +1270,12 @@ function migrateToTrackerConfig() {
         const shouldShow = extensionSettings.trackerConfig.userStats.showRPGAttributes;
         extensionSettings.trackerConfig.userStats.rpgAttributes = [
             { id: 'str', name: 'STR', enabled: shouldShow },
-            { id: 'dex', name: 'DEX', enabled: shouldShow },
-            { id: 'con', name: 'CON', enabled: shouldShow },
+            { id: 'per', name: 'PER', enabled: shouldShow },
+            { id: 'end', name: 'END', enabled: shouldShow },
+            { id: 'cha', name: 'CHA', enabled: shouldShow },
             { id: 'int', name: 'INT', enabled: shouldShow },
-            { id: 'wis', name: 'WIS', enabled: shouldShow },
-            { id: 'cha', name: 'CHA', enabled: shouldShow }
+            { id: 'agi', name: 'AGI', enabled: shouldShow },
+            { id: 'lck', name: 'LCK', enabled: shouldShow }
         ];
         delete extensionSettings.trackerConfig.userStats.showRPGAttributes;
         // console.log('[RPG Companion] Migrated showRPGAttributes to rpgAttributes array');
@@ -1266,11 +1285,12 @@ function migrateToTrackerConfig() {
     if (!extensionSettings.trackerConfig.userStats.rpgAttributes) {
         extensionSettings.trackerConfig.userStats.rpgAttributes = [
             { id: 'str', name: 'STR', enabled: true },
-            { id: 'dex', name: 'DEX', enabled: true },
-            { id: 'con', name: 'CON', enabled: true },
+            { id: 'per', name: 'PER', enabled: true },
+            { id: 'end', name: 'END', enabled: true },
+            { id: 'cha', name: 'CHA', enabled: true },
             { id: 'int', name: 'INT', enabled: true },
-            { id: 'wis', name: 'WIS', enabled: true },
-            { id: 'cha', name: 'CHA', enabled: true }
+            { id: 'agi', name: 'AGI', enabled: true },
+            { id: 'lck', name: 'LCK', enabled: true }
         ];
     }
 
@@ -1283,7 +1303,7 @@ function migrateToTrackerConfig() {
     if (extensionSettings.classicStats) {
         for (const attr of extensionSettings.trackerConfig.userStats.rpgAttributes) {
             if (extensionSettings.classicStats[attr.id] === undefined) {
-                extensionSettings.classicStats[attr.id] = 10;
+                extensionSettings.classicStats[attr.id] = 5;
             }
         }
     }
@@ -1433,6 +1453,52 @@ export function migrateToPresetManager() {
         // console.log('[RPG Companion] Created Default preset from existing trackerConfig');
         saveSettings();
     }
+}
+
+/**
+ * Removes generic life-simulation trackers from the visible configuration and
+ * configures the existing attribute renderer for Fallout SPECIAL.
+ * Old chat payloads are filtered during normalization; parser compatibility is retained until Phase 5.
+ */
+function applyFalloutTrackerDefaults() {
+    const specialAttributes = [
+        { id: 'str', name: 'STR', enabled: true, persistInHistory: false },
+        { id: 'per', name: 'PER', enabled: true, persistInHistory: false },
+        { id: 'end', name: 'END', enabled: true, persistInHistory: false },
+        { id: 'cha', name: 'CHA', enabled: true, persistInHistory: false },
+        { id: 'int', name: 'INT', enabled: true, persistInHistory: false },
+        { id: 'agi', name: 'AGI', enabled: true, persistInHistory: false },
+        { id: 'lck', name: 'LCK', enabled: true, persistInHistory: false }
+    ];
+
+    const applyToConfig = (trackerConfig) => {
+        if (!trackerConfig?.userStats) return;
+        trackerConfig.userStats.customStats = [];
+        trackerConfig.userStats.statsDisplayMode = 'number';
+        trackerConfig.userStats.rpgAttributes = specialAttributes.map(attribute => ({ ...attribute }));
+        trackerConfig.userStats.showRPGAttributes = true;
+        trackerConfig.userStats.alwaysSendAttributes = true;
+        if (trackerConfig.userStats.statusSection) {
+            trackerConfig.userStats.statusSection.showMoodEmoji = false;
+            trackerConfig.userStats.statusSection.customFields = ['Conditions'];
+        }
+        const npcStats = trackerConfig.presentCharacters?.characterStats?.stats;
+        if (Array.isArray(npcStats)) {
+            trackerConfig.presentCharacters.characterStats.stats = npcStats.filter(stat =>
+                String(stat?.id || '').toLowerCase() !== 'arousal' &&
+                String(stat?.name || '').toLowerCase() !== 'arousal'
+            );
+        }
+    };
+
+    applyToConfig(extensionSettings.trackerConfig);
+    for (const preset of Object.values(extensionSettings.presetManager?.presets || {})) {
+        applyToConfig(preset?.trackerConfig);
+    }
+
+    extensionSettings.ruleset = 'fallout2d20';
+    extensionSettings.fallout = normalizeFalloutState(extensionSettings.fallout);
+    extensionSettings.classicStats = { ...extensionSettings.fallout.character.special };
 }
 
 /**
@@ -1588,6 +1654,9 @@ export function loadPreset(presetId) {
             };
         }
         extensionSettings.presetManager.activePresetId = presetId;
+        applyFalloutTrackerDefaults();
+        extensionSettings.theme = 'pipboy';
+        applyTheme();
         saveSettings();
         // console.log(`[RPG Companion] Loaded preset "${preset.name}"`);
         return true;

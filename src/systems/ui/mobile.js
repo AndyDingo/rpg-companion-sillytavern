@@ -1442,9 +1442,8 @@ export function updateFabWidgets() {
 
         const statsHtml = allStats
             .filter(s => {
-                // If no config, show all stats
-                if (configuredStats.length === 0) return true;
-                // Check if stat is enabled in trackerConfig (match by id or name, case-insensitive)
+                // Fallout mode intentionally has no generic-stat allowlist entries.
+                // Do not expose legacy meters merely because the list is empty.
                 const statId = s.id?.toLowerCase();
                 const statName = s.name?.toLowerCase();
                 return enabledStatMap.has(statId) || enabledStatMap.has(statName);

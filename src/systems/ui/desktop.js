@@ -161,12 +161,11 @@ export function updateStripWidgets() {
             $statsList.empty();
 
             allStats.forEach(stat => {
-                // Filter by config if available - but if no config, show all
-                if (configuredStats.length > 0) {
-                    const statId = stat.id?.toLowerCase();
-                    const statName = stat.name?.toLowerCase();
-                    if (!enabledStatMap.has(statId) && !enabledStatMap.has(statName)) return;
-                }
+                // Fallout mode has an intentionally empty generic-stat allowlist.
+                // An empty list must therefore hide legacy stats, not reveal all of them.
+                const statId = stat.id?.toLowerCase();
+                const statName = stat.name?.toLowerCase();
+                if (!enabledStatMap.has(statId) && !enabledStatMap.has(statName)) return;
 
                 const value = typeof stat.value === 'number' ? stat.value : parseInt(stat.value) || 0;
                 const color = getStatColor(value);

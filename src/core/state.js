@@ -10,7 +10,8 @@
  * Extension settings - persisted to SillyTavern settings
  */
 export let extensionSettings = {
-    settingsVersion: 5, // Version number for settings migrations
+    settingsVersion: 6, // Version number for settings migrations
+    ruleset: 'fallout2d20',
     enabled: true,
     autoUpdate: false,
     updateDepth: 4, // How many messages to include in the context
@@ -67,7 +68,7 @@ export let extensionSettings = {
         sendAllEnabledOnRefresh: false // If true, sends all enabled stats from preset instead of only persistInHistory-enabled stats on Refresh RPG Info
     },
     panelPosition: 'right', // 'left', 'right', or 'top'
-    theme: 'default', // Theme: default, sci-fi, fantasy, cyberpunk, custom
+    theme: 'pipboy', // Fallout Pip-Boy theme
     customColors: {
         bg: '#1a1a2e',
         bgOpacity: 100,
@@ -109,12 +110,6 @@ export let extensionSettings = {
         attributes: { enabled: true }        // Compact RPG attributes display
     },
     userStats: {
-        health: 100,
-        satiety: 100,
-        energy: 100,
-        hygiene: 100,
-        arousal: 0,
-        mood: '😐',
         conditions: 'None',
         skills: [],
         inventory: {
@@ -125,42 +120,33 @@ export let extensionSettings = {
             assets: "None"
         }
     },
-    statNames: {
-        health: 'Health',
-        satiety: 'Satiety',
-        energy: 'Energy',
-        hygiene: 'Hygiene',
-        arousal: 'Arousal'
-    },
+    statNames: {}, // Legacy field retained for migration compatibility
     // Tracker customization configuration
     trackerConfig: {
         userStats: {
             // Stats display mode: 'percentage' or 'number'
             statsDisplayMode: 'percentage',
             // Array of custom stats (allows add/remove/rename)
-            customStats: [
-                { id: 'health', name: 'Health', enabled: true, persistInHistory: false, maxValue: 100 },
-                { id: 'satiety', name: 'Satiety', enabled: true, persistInHistory: false, maxValue: 100 },
-                { id: 'energy', name: 'Energy', enabled: true, persistInHistory: false, maxValue: 100 },
-                { id: 'hygiene', name: 'Hygiene', enabled: true, persistInHistory: false, maxValue: 100 },
-                { id: 'arousal', name: 'Arousal', enabled: true, persistInHistory: false, maxValue: 100 }
-            ],
-            // RPG Attributes (customizable D&D-style attributes)
+            // Fallout resources are rendered by the dedicated Fallout UI in a later phase.
+            // Keep generic stat bars empty so legacy life-simulation meters are not shown.
+            customStats: [],
+            // Fallout 2d20 SPECIAL attributes
             showRPGAttributes: true,
             showLevel: true, // Show/hide level in UI and prompts
-            alwaysSendAttributes: false, // If true, always send attributes; if false, only send with dice rolls
+            alwaysSendAttributes: true, // Always provide SPECIAL to the AI GM
             rpgAttributes: [
                 { id: 'str', name: 'STR', enabled: true, persistInHistory: false },
-                { id: 'dex', name: 'DEX', enabled: true, persistInHistory: false },
-                { id: 'con', name: 'CON', enabled: true, persistInHistory: false },
+                { id: 'per', name: 'PER', enabled: true, persistInHistory: false },
+                { id: 'end', name: 'END', enabled: true, persistInHistory: false },
+                { id: 'cha', name: 'CHA', enabled: true, persistInHistory: false },
                 { id: 'int', name: 'INT', enabled: true, persistInHistory: false },
-                { id: 'wis', name: 'WIS', enabled: true, persistInHistory: false },
-                { id: 'cha', name: 'CHA', enabled: true, persistInHistory: false }
+                { id: 'agi', name: 'AGI', enabled: true, persistInHistory: false },
+                { id: 'lck', name: 'LCK', enabled: true, persistInHistory: false }
             ],
             // Status section config
             statusSection: {
                 enabled: true,
-                showMoodEmoji: true,
+                showMoodEmoji: false,
                 customFields: ['Conditions'], // User can edit what to track
                 persistInHistory: false // Persist status in historical messages
             },
@@ -227,8 +213,8 @@ export let extensionSettings = {
             characterStats: {
                 enabled: false,
                 customStats: [
-                    { id: 'health', name: 'Health', enabled: true },
-                    { id: 'arousal', name: 'Arousal', enabled: true }
+                    { id: 'hp', name: 'HP', enabled: true },
+                    { id: 'radiation', name: 'Radiation', enabled: true }
                 ]
             }
         }
@@ -249,12 +235,33 @@ export let extensionSettings = {
     }, null, 2),
     level: 1, // User's character level
     classicStats: {
-        str: 10,
-        dex: 10,
-        con: 10,
-        int: 10,
-        wis: 10,
-        cha: 10
+        str: 5,
+        per: 5,
+        end: 5,
+        cha: 5,
+        int: 5,
+        agi: 5,
+        lck: 5
+    },
+    fallout: {
+        version: 1,
+        ruleset: 'fallout2d20',
+        character: {
+            name: '', level: 1,
+            special: { str: 5, per: 5, end: 5, cha: 5, int: 5, agi: 5, lck: 5 },
+            skills: {}, perks: []
+        },
+        resources: { hp: null, maxHp: null, actionPoints: 0, luckPoints: 0, fatigue: 0, radiation: 0 },
+        conditions: [], injuries: [],
+        survival: {
+            enabled: false,
+            hunger: { enabled: false, state: 'full', stateEnteredAt: null },
+            thirst: { enabled: false, state: 'quenched', stateEnteredAt: null },
+            sleep: { enabled: false, state: 'rested', lastRestAt: null }
+        },
+        campaignClock: { mode: 'manual', currentDate: null, currentTime: null, elapsedMinutes: 0, lastAdvanceReason: '' },
+        equipment: { weapons: [], armour: [], ammunition: [], aid: [], miscellaneous: [] },
+        settings: { aiUpdateMode: 'automatic' }
     },
     lastDiceRoll: null, // Store last dice roll result
     showDiceDisplay: true, // Show the "Last Roll" display in the panel
@@ -284,7 +291,7 @@ export let extensionSettings = {
     },
     // Lock state for tracker items (v3 JSON format feature)
     lockedItems: {
-        stats: [],              // Array of locked stat IDs (e.g., ["health", "satiety"])
+        stats: [],              // Array of locked tracker stat IDs
         skills: [],             // Array of locked skill names (e.g., ["Cooking", "Swordsmanship"])
         inventory: {
             onPerson: [],       // Array of locked item indices (e.g., [0, 2])
